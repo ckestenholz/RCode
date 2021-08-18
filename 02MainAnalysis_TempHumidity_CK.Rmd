@@ -125,8 +125,8 @@ for (j in 1:nrow(comb)){
   data <- subset(data, month %in% 5:9)
 
   #DEFINE CROSSBASIS TEMPERATURE
-  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
-   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+  cbt <- crossbasis(data$`max temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`max temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
    arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
 
   # DEFINE CROSSBASIS HUMIDITY
@@ -169,7 +169,7 @@ for (j in 1:nrow(comb)){
   # MODEL ONLY temperature 
   model <- glm(formula1,data,family=quasipoisson,na.action="na.exclude")
   qaic_tabPP[i,j,1] <- QAIC(model)
-  crosspredall_tempnull[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+  crosspredall_tempnull[[i]] <- crosspred(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   # MODEL ONLY humidity PP
@@ -183,7 +183,7 @@ for (j in 1:nrow(comb)){
   qaic_tabPP[i,j,3] <- QAIC(model)
   crosspredall_humcomb[[i]] <- crosspred(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
-  crosspredall_tempcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+  crosspredall_tempcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   # MODEL ONLY humidity RH
@@ -197,7 +197,7 @@ for (j in 1:nrow(comb)){
   qaic_tabRH[i,j,3] <- QAIC(model)
   crosspredall_humrelcomb[[i]] <- crosspred(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
-  crosspredall_temprelcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+  crosspredall_temprelcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
 
  }
@@ -266,8 +266,8 @@ for(i in seq(length(dlist))) {
   data <- subset(data, month %in% 5:9)
 
   #DEFINE CROSSBASIS TEMPERATURE
-  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
-   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+  cbt <- crossbasis(data$`max temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`max temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
    arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
 
   # DEFINE CROSSBASIS HUMIDITY
@@ -293,11 +293,11 @@ for(i in seq(length(dlist))) {
   # MODEL ONLY temperature 
   model <- glm(formula1,data,family=quasipoisson,na.action="na.exclude")
   cptempnull[[i]] <- crossreduce(cbt,model,
-                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   cptempnulllag[[i]] <- crossreduce(cbt,model,type="var",
-                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
-                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 cen=mean(data$`max temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`max temperature [deg]`,0.99, na.rm=T),
                                  by=0.1) 
   
   # MODEL ONLY humidity PP
@@ -313,7 +313,7 @@ for(i in seq(length(dlist))) {
   model <- glm(formula3,data,family=quasipoisson,na.action="na.exclude")
   cphumppcomb[[i]] <- crossreduce(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
-  cptempcombpp[[i]] <- crossreduce(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+  cptempcombpp[[i]] <- crossreduce(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   cphumppcomblag[[i]] <- crossreduce(cbh,model,type="var",
@@ -321,8 +321,8 @@ for(i in seq(length(dlist))) {
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   cptempcombpplag[[i]] <- crossreduce(cbt,model,type="var",
-                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
-                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 cen=mean(data$`max temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`max temperature [deg]`,0.99, na.rm=T),
                                  by=0.1) 
   
   # MODEL ONLY humidity RH
@@ -338,7 +338,7 @@ for(i in seq(length(dlist))) {
   model <- glm(formula5,data,family=quasipoisson,na.action="na.exclude")
   cphumrhcomb[[i]] <- crossreduce(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
-  cptempcombrh[[i]] <- crossreduce(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+  cptempcombrh[[i]] <- crossreduce(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   cphumrhcomblag[[i]] <- crossreduce(cbrelh,model,type="var",
@@ -346,8 +346,8 @@ for(i in seq(length(dlist))) {
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   cptempcombrhlag[[i]] <- crossreduce(cbt,model,type="var",
-                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
-                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 cen=mean(data$`max temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`max temperature [deg]`,0.99, na.rm=T),
                                  by=0.1) 
 
 }
@@ -527,8 +527,8 @@ dev.off()
   data$yday <- as.numeric(format(data$date,"%j"))
 
   #DEFINE CROSSBASIS TEMPERATURE and define DUMMY-terms
-  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
-   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+  cbt <- crossbasis(data$`max temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`max temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
    arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
   
   # CREATE DUMMY VARIABLE FOR HUMIDITY
@@ -550,14 +550,14 @@ dev.off()
   
   # PREDICT
   redtemp.n <- crossreduce(cbt,modnull,cen=10, by=0.1, 
-                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
-                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+                           from=round(quantile(data$`max temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`max temperature [deg]`, 0.98, na.rm=T),1) ) 
   redtemp.1 <- crossreduce(cbt,modint1,cen=10, by=0.1, 
-                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
-                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+                           from=round(quantile(data$`max temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`max temperature [deg]`, 0.98, na.rm=T),1) ) 
   redtemp.2 <- crossreduce(cbt,modint2,cen=10, by=0.1, 
-                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
-                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+                           from=round(quantile(data$`max temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`max temperature [deg]`, 0.98, na.rm=T),1) ) 
 
   # RESTRCIT SEARCH MMT BETWEEN 25:98 PCT
   mmh.n <- as.numeric(names(which.min(redtemp.n$fit)))
@@ -591,7 +591,7 @@ dev.off()
  lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)
  lines(redall.int[[k]], col="forestgreen", ci="area", ci.arg=list(col=col4))
 
- abline(v= quantile(data$`mean temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
+ abline(v= quantile(data$`max temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
  # legend("top", legend=c("modelnull", "dry", "humid", "interaction"),
  #       col=c("orange","red", "blue",  "green"), lty=1:4, cex=0.8)
  }
@@ -624,8 +624,8 @@ dev.off()
   data$yday <- as.numeric(format(data$date,"%j"))
 
   #DEFINE CROSSBASIS TEMPERATURE and define DUMMY-terms
-  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
-   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+  cbt <- crossbasis(data$`max temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`max temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
    arglag=list(fun="ns", knots=logknots(10,2)),group=as.factor(data$year)) # could be 7days according to previous formula?
   
   cbh <- crossbasis(data$`partial pressure [hPa]`, lag=5,
@@ -633,8 +633,8 @@ dev.off()
    arglag=list(fun="strata", breaks=1),  group=as.factor(data$year))
   
   # CREATE DUMMY VARIABLE FOR TEMPERATURE
-  data$dummy1<- ifelse(data$`mean temperature [deg]` > quantile(data$`mean temperature [deg]`,0.9,na.rm=T),1,0) # very humid
-  data$dummy2 <- ifelse(data$`mean temperature [deg]` <= quantile(data$`mean temperature [deg]`,0.9,na.rm=T),1,0) # dry
+  data$dummy1<- ifelse(data$`max temperature [deg]` > quantile(data$`max temperature [deg]`,0.9,na.rm=T),1,0) # very humid
+  data$dummy2 <- ifelse(data$`max temperature [deg]` <= quantile(data$`max temperature [deg]`,0.9,na.rm=T),1,0) # dry
 
   # CREATE INTERACTION TERMS
   int1 <- data$dummy1*cbh # very humid
@@ -679,7 +679,7 @@ png(filename = "intmodel_humpp_5cantons.png",
  lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)
  lines(redall.int[[k]], col="forestgreen", ci="area", ci.arg=list(col=col4))
 
- abline(v= quantile(data$`mean temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
+ abline(v= quantile(data$`max temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
  # legend("top", legend=c("modelnull", "dry", "humid", "interaction"),
  #       col=c("orange","red", "blue",  "forestgreen"), lty=1:4, cex=0.8)
  } 
@@ -701,11 +701,19 @@ colnames(res_TempHumidity) <- c("cptempnull", "cptempcombpp", "cptempcombrh", "c
 rownames(res_TempHumidity) <- names(dlist)
 
  for (k in c(1,12,21,23,25)){
-   res_TempHumidity[k,1] <- paste0(round(cptempnull[[k]]$RRfit[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempnull[[k]]$RRlow[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempnull[[k]]$RRhigh[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
    
-   res_TempHumidity[k,2] <- paste0(round(cptempcombpp[[k]]$RRfit[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempcombpp[[k]]$RRlow[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempcombpp[[k]]$RRhigh[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
+   # load the summer data
+   # EXTRACT THE DATA
+   data <- dlist[[k]]
+   data <- subset(data, month %in% 5:9)
+   # calculate the 99th percentile of the variable
+   NNPC <- round(quantile(data$`max temperature [deg]`, 0.99, na.rm=T), digits=1)
    
-   res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempcombrh[[k]]$RRlow[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempcombrh[[k]]$RRhigh[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
+   res_TempHumidity[k,1] <- paste0(round(cptempnull[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempnull[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempnull[[k]]$RRhigh[as.character(NNPC)],2) , "]")
+   
+   res_TempHumidity[k,2] <- paste0(round(cptempcombpp[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempcombpp[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempcombpp[[k]]$RRhigh[as.character(NNPC)],2) , "]")
+   
+   res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempcombrh[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempcombrh[[k]]$RRhigh[as.character(NNPC)],2) , "]")
    
    res_TempHumidity[k,4] <- paste0(round(cphumppnull[[k]]$coefficients[[1]], digits=4), " per hPa of PP") # linear
    
@@ -715,8 +723,6 @@ rownames(res_TempHumidity) <- names(dlist)
    
    res_TempHumidity[k,7] <- paste0(round(mean(cphumrhcomb[[k]]$coefficients[[1]]), digits=4), " per % of RH") # linear 
    
-  # ISSUE: Check if this new approach corresponds really to the slope or not!!!! TO BE CHECKED 17.08.2021
-
  }
 
 write.table(res_TempHumidity[c(1,12,21,23,25), ], file = "res_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)

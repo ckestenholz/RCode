@@ -1,0 +1,733 @@
+---
+title: "Swiss Cantonal 89-18 Cross Basis Selection"
+author: "Christoph Kestenholz"
+date: "18 May 2021"
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+<script>
+   $(document).ready(function() {
+     $head = $('#header');
+     $head.prepend('<img src=\"oeschger_logo_rgb.jpg\" style=\"float: upper;width: 170px;\"/>')
+   });
+</script>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using a basic model, we test different CB-humidity specifications and select the 
+one with lowest grand q-AIC. We use the basic temperature cb and the model for summer months.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+# LOAD LIBRARIES
+library(dlnm) ; library(splines) ; library(tsModel) ; library(lubridate)
+library(mixmeta); library(ggplot2);
+library("Epi") ; library("splines")
+
+# SPECIFY IF WORKING FROM DESKTOP OR LAPTOP
+# dirpre <- "C:/Users/ppehavic/OD 1/LSHTM/MCC/MCCOzone/Analysis/"
+setwd("D:/data/TempHumidity/02")
+dirpre <- "D:/data/TempHumidity/"
+
+
+# LOAD DATA (CLEAN MCCOZONE)
+# load(paste(dirpre,"output/swiss_cantonal_89-18.rds", sep=""))
+dlist <- readRDS(paste(dirpre,"00/DataTempHumidity_CK.rds", sep=""))
+
+#dlist <- readRDS("swiss_cantonal_89-18.rds")
+
+# FUNCTION FOR COMPUTING THE Q-AIC
+QAIC <- function(model) {
+  phi <- summary(model)$dispersion
+	loglik <- sum(dpois(model$y, model$fitted.values, log=TRUE))
+  return(-2*loglik + 2*summary(model)$df[3]*phi)
+}
+
+```
+
+## 1. PARAMETERS - CB SELECTION OF HUMIDITY
+
+### DEFINE DIFFERENT SPECIFICATIONS FOR EACH DIMENSION OF THE CB
+
+NOTE: We keep constant the definition of cb-temperature and change the parameters for cb-humidity
+Create one matrix to define the alternative combinations of the two functions.
+
+```{r echo=TRUE}
+# CREATE TWO MATRIX WITH THE DIFFERENT COMB OF FUNCTIONS AND 
+comb <- expand.grid(1:4,1:5)
+```
+
+### DEFINE THE OTHER TERMS OF THE MODEL
+
+```{r, echo=TRUE}
+# DEGREE OF FREEDOM FOR SEASONALITY
+dfseas <- 4
+
+# DEGREE OF FREEDOM FOR TREND
+dftrend <- 1
+
+# MODEL FORMULA
+formula1 <- deaths ~ cbt + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)) # Max Temp
+formula2 <- deaths ~ cbh + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)) # Partial Humidity Pressue
+formula3 <- deaths ~ cbt + cbh + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)) # Max Temp + Partial Humidity Pressure
+formula4 <- deaths ~ cbrelh + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)) # Relative Humidity
+formula5 <- deaths ~ cbt + cbrelh + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)) # Max Temp + Relative Humidity
+```
+
+For each combination of functions, run the location-specific model and store
+the estimates, objects and qaic.
+
+```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE, paged.print=FALSE}
+# CREATE AN EMPTY MATRIX TO STORE THE QAIC
+qaic_tabPP <- array(NA,dim=c(length(dlist),nrow(comb), 3)
+    ,dimnames=list(names(dlist),c(paste0("comb",1:nrow(comb))),
+                   c("temp_null","hum_null","comb")))
+
+qaic_tabRH <- array(NA,dim=c(length(dlist),nrow(comb), 3)
+    ,dimnames=list(names(dlist),c(paste0("comb",1:nrow(comb))),
+                   c("temp_null","hum_null","comb")))
+
+crosspredall_humnull_list <- list()
+crosspredall_tempnull_list <- list()
+crosspredall_humcomb_list <- list()
+crosspredall_tempcomb_list <- list()
+crosspredall_humrelnull_list <- list()
+crosspredall_humrelcomb_list <- list()
+crosspredall_temprelcomb_list <- list()
+
+# RUN THE MODEL FOR EACH COMBINATION OF FUNCTIONS
+for (j in 1:nrow(comb)){
+ 
+  cat(j,"")
+
+  crosspredall_humnull <- list()
+  crosspredall_tempnull <- list()
+  crosspredall_humcomb <- list()
+  crosspredall_tempcomb <- list()
+  crosspredall_humrelnull <- list()
+  crosspredall_humrelcomb <- list()
+  crosspredall_temprelcomb <- list()
+  
+ # RUN THE LOOP ACROSS CANTONS
+ for (i in c(1,12,21,23,25)){
+ #for(i in seq(length(dlist))) {
+
+  # PRINT
+  cat(i,"")
+
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+
+  #DEFINE CROSSBASIS TEMPERATURE
+  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+   arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
+
+  # DEFINE CROSSBASIS HUMIDITY
+  # DIFFERENT FUNCTIONS OF THE LAG DIMENSION
+  maxlag <- 5 
+  arglag1o <- list(knots=logknots(maxlag,1))
+  arglag2o <- list(fun="strata", breaks=1)
+  arglag3o <- list(fun="integer")
+  arglag4o <- list(fun="ns", knots=logknots(maxlag,1))
+  arglag5o <- list(fun="strata", breaks=c(1,3))
+
+  # DEFINE DIFFERENT FUNCITONS OF THE VAR DIMENSION - PARTIAL PRESSURE
+  argvar1o <- list(fun="lin")
+  argvar2o <- list(fun="ns", knots=quantile(data$`partial pressure [hPa]`, c(0.5, 0.9), na.rm=T),
+                 Boundary.knots=range(data$`partial pressure [hPa]`, na.rm=T))
+  argvar3o <- list(fun="ns", knots=quantile(data$`partial pressure [hPa]`, c(0.75), na.rm=T),
+                 Boundary.knots=range(data$`partial pressure [hPa]`, na.rm=T))
+  argvar4o <- list(fun="thr", side="h", thr.value=quantile(data$`partial pressure [hPa]`, 0.9, na.rm=T))
+  
+  cbh <- crossbasis(data$`partial pressure [hPa]`, lag=5,
+   argvar=get(paste("argvar",comb[j,1],"o", sep="")),
+   arglag=get(paste("arglag",comb[j,2],"o", sep="")),  group=as.factor(data$year))
+  
+  # DEFINE DIFFERENT FUNCITONS OF THE VAR DIMENSION - REL HUMIDITY
+  argvar1o <- list(fun="lin")
+  argvar2o <- list(fun="ns", knots=quantile(data$`relative humidity [%]`, c(0.5, 0.9), na.rm=T),
+                 Boundary.knots=range(data$`relative humidity [%]`, na.rm=T))
+  argvar3o <- list(fun="ns", knots=quantile(data$`relative humidity [%]`, c(0.75), na.rm=T),
+                 Boundary.knots=range(data$`relative humidity [%]`, na.rm=T))
+  argvar4o <- list(fun="thr", side="h", thr.value=quantile(data$`relative humidity [%]`, 0.9, na.rm=T))
+  
+  cbrelh <- crossbasis(data$`relative humidity [%]`, lag=5,
+   argvar=get(paste("argvar",comb[j,1],"o", sep="")),
+   arglag=get(paste("arglag",comb[j,2],"o", sep="")),  group=as.factor(data$year))
+  
+
+  # CREATE YDAY
+  data$yday <- yday(data$date)
+  
+  # MODEL ONLY temperature 
+  model <- glm(formula1,data,family=quasipoisson,na.action="na.exclude")
+  qaic_tabPP[i,j,1] <- QAIC(model)
+  crosspredall_tempnull[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL ONLY humidity PP
+  model <- glm(formula2,data,family=quasipoisson,na.action="na.exclude")
+  qaic_tabPP[i,j,2] <- QAIC(model)
+  crosspredall_humnull[[i]] <- crosspred(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL temp +  humidity PP
+  model <- glm(formula3,data,family=quasipoisson,na.action="na.exclude")
+  qaic_tabPP[i,j,3] <- QAIC(model)
+  crosspredall_humcomb[[i]] <- crosspred(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 by=0.1) 
+  crosspredall_tempcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL ONLY humidity RH
+  model <- glm(formula4,data,family=quasipoisson,na.action="na.exclude")
+  qaic_tabRH[i,j,2] <- QAIC(model)
+  crosspredall_humrelnull[[i]] <- crosspred(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL temp +  humidity RH
+  model <- glm(formula5,data,family=quasipoisson,na.action="na.exclude")
+  qaic_tabRH[i,j,3] <- QAIC(model)
+  crosspredall_humrelcomb[[i]] <- crosspred(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+                                 by=0.1) 
+  crosspredall_temprelcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+
+ }
+  
+crosspredall_humnull_list[[j]] <- crosspredall_humnull
+crosspredall_tempnull_list[[j]] <- crosspredall_tempnull
+crosspredall_humcomb_list[[j]] <- crosspredall_humcomb
+crosspredall_tempcomb_list[[j]] <- crosspredall_tempcomb
+crosspredall_humrelnull_list[[j]] <- crosspredall_humrelnull
+crosspredall_humrelcomb_list[[j]] <- crosspredall_humrelcomb
+crosspredall_temprelcomb_list[[j]] <- crosspredall_temprelcomb
+}
+
+# summaryqaicPP <- apply(qaic_tabPP,2:3,sum) # for all 26 cantons
+summaryqaicPP <- apply(qaic_tabPP[c(1,12,21,23,25),,],2:3,sum)
+
+# summaryqaicRH <- apply(qaic_tabRH,2:3,sum) # for all 26 cantons
+summaryqaicRH <- apply(qaic_tabRH[c(1,12,21,23,25),,],2:3,sum)
+
+
+combPP <- which.min(summaryqaicPP[,3]) # linear & strata
+combPP <- which.min(summaryqaicPP_test[,3]) # linear & strata
+
+#combRH <- which.min(summaryqaicRH[,3]) # linear & strata
+combRH <- combPP
+
+# SAVE THE WORKSPACE
+save.image("output/cbselection.RData")
+
+# LOAD STORED RESULTS
+load("output/cbselection.RData")
+
+plot(1:20,summaryqaicPP[,2], main="CB selection HUMI_NULL")
+plot(1:20,summaryqaicPP[,3], main="CB selection COMB")
+
+# plot(1:20,summaryqaicRH[,2], main="CB selection RH HUMI_NULL") # relative humidity
+# plot(1:20,summaryqaicRH[,3], main="CB selection RH COMB") # relative humidity
+
+which.min(summaryqaicPP[,3]) # linear & strata
+# which.min(summaryqaicRH[,3]) # # relative humidity: linear & strata
+
+
+```
+
+## 2. SELCTED MODEL - MAIN RESULTS
+
+Plot the results for temperature and humidity for the 5 cantons selected
+```{r}
+#update working directory
+setwd("D:/data/TempHumidity/02/img")
+
+# Save form
+cptempnull <- cphumppnull <- cphumppcomb <- 
+  cptempcombpp <- cphumrhnull <- cphumrhcomb <- 
+  cptempcombrh <-  cptempnulllag <- cphumppnulllag <-
+  cphumppcomblag <- cptempcombpplag <- cphumrhnulllag <-
+  cphumrhcomblag <- cptempcombrhlag <- list()
+
+selcantons <- c(1,12,21,23,25)
+
+for(i in seq(length(dlist))) {
+
+  # PRINT
+  cat(i,"")
+
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+
+  #DEFINE CROSSBASIS TEMPERATURE
+  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+   arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
+
+  # DEFINE CROSSBASIS HUMIDITY
+  # DIFFERENT FUNCTIONS OF THE LAG DIMENSION
+  maxlag <- 5 
+  arglag2o <- list(fun="strata", breaks=1)
+
+  
+  # DEFINE DIFFERENT FUNCITONS OF THE VAR DIMENSION - PARTIAL PRESSURE
+  argvar1o <- list(fun="lin")
+  
+  cbh <- crossbasis(data$`partial pressure [hPa]`, lag=maxlag,
+   argvar=argvar1o,
+   arglag=arglag2o,  group=as.factor(data$year))
+
+  cbrelh <- crossbasis(data$`relative humidity [%]`, lag=maxlag,
+   argvar=argvar1o,
+   arglag=arglag2o,  group=as.factor(data$year))
+  
+  # CREATE YDAY
+  data$yday <- yday(data$date)
+  
+  # MODEL ONLY temperature 
+  model <- glm(formula1,data,family=quasipoisson,na.action="na.exclude")
+  cptempnull[[i]] <- crossreduce(cbt,model,
+                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+  cptempnulllag[[i]] <- crossreduce(cbt,model,type="var",
+                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL ONLY humidity PP
+  model <- glm(formula2,data,family=quasipoisson,na.action="na.exclude")
+  cphumppnull[[i]] <- crossreduce(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 by=0.1) 
+  cphumppnulllag[[i]] <- crossreduce(cbh,model,type="var",
+                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL temp +  humidity PP
+  model <- glm(formula3,data,family=quasipoisson,na.action="na.exclude")
+  cphumppcomb[[i]] <- crossreduce(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 by=0.1) 
+  cptempcombpp[[i]] <- crossreduce(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+  
+  cphumppcomblag[[i]] <- crossreduce(cbh,model,type="var",
+                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
+                                 by=0.1) 
+  cptempcombpplag[[i]] <- crossreduce(cbt,model,type="var",
+                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL ONLY humidity RH
+  model <- glm(formula4,data,family=quasipoisson,na.action="na.exclude")
+  cphumrhnull[[i]] <- crossreduce(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+                                 by=0.1) 
+  cphumrhnulllag[[i]] <- crossreduce(cbrelh,model,type="var",
+                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
+                                 by=0.1) 
+  
+  # MODEL temp +  humidity RH
+  model <- glm(formula5,data,family=quasipoisson,na.action="na.exclude")
+  cphumrhcomb[[i]] <- crossreduce(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+                                 by=0.1) 
+  cptempcombrh[[i]] <- crossreduce(cbt,model,cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 by=0.1) 
+  
+  cphumrhcomblag[[i]] <- crossreduce(cbrelh,model,type="var",
+                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
+                                 by=0.1) 
+  cptempcombrhlag[[i]] <- crossreduce(cbt,model,type="var",
+                                 cen=mean(data$`mean temperature [deg]`,na.rm=T),
+                                 value=quantile(data$`mean temperature [deg]`,0.99, na.rm=T),
+                                 by=0.1) 
+
+}
+
+
+## PLOTS 
+
+listcantons <- names(dlist)
+
+# 1
+png(filename = "er_humpptemp_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,4))
+
+for (i in selcantons){
+  plot(cphumppnull[[i]], main=paste0("Humidity (null) ",
+                listcantons[i]), ylab="RR", xlab="Partial pressure")
+  plot(cptempnull[[i]], main=paste0("Temperature (null) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+  plot(cphumppcomb[[i]], main=paste0("Humidity (comb) ",
+                listcantons[i]), ylab="RR", xlab="Partial pressure")
+  plot(cptempcombpp[[i]],  main=paste0("Temperature (comb) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+}
+dev.off()
+
+# 2
+png(filename = "er_humreltemp_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,4))
+
+for (i in selcantons){
+  plot(cphumrhnull[[i]],main=paste0("Humidity (null) ",
+                listcantons[i]), ylab="RR", xlab="Rel Hum")
+  plot(cptempnull[[i]], main=paste0("Temperature (null) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+  plot(cphumrhcomb[[i]], main=paste0("Humidity (comb) ",
+                listcantons[i]), ylab="RR", xlab="Rel Hum")
+  plot(cptempcombrh[[i]], main=paste0("Temperature (comb) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+}
+dev.off()
+
+# 3
+png(filename = "lag_humpptemp_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,4))
+
+for (i in selcantons){
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+  
+  plot(cphumppnulllag[[i]],
+       main=paste0("Humidity (null) ", listcantons[i]), 
+       ylab="RR", xlab="Partial pressure")
+  plot(cptempnulllag[[i]], 
+       main=paste0("Temperature (null) ", listcantons[i]),
+       ylab="RR", xlab="Temperature")
+  plot(cphumppcomblag[[i]],  
+       main=paste0("Humidity (comb) ", listcantons[i]), 
+       ylab="RR", xlab="Partial pressure")
+  plot(cptempcombpplag[[i]],  
+       main=paste0("Temperature (comb) ", listcantons[i]),
+       ylab="RR", xlab="Temperature")
+}
+dev.off()
+
+# 4
+png(filename = "lag_humrhtemp_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,4))
+
+for (i in selcantons){
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+  
+  plot(cphumrhnulllag[[i]],
+       main=paste0("Humidity (null) ", listcantons[i]), 
+       ylab="RR", xlab="Rel humidity")
+  plot(cptempnulllag[[i]], 
+       main=paste0("Temperature (null) ", listcantons[i]),
+       ylab="RR", xlab="Temperature")
+  plot(cphumrhcomblag[[i]],  
+       main=paste0("Humidity (comb) ", listcantons[i]), 
+       ylab="RR", xlab="Rel humidity")
+  plot(cptempcombrhlag[[i]],  
+       main=paste0("Temperature (comb) ", listcantons[i]),
+       ylab="RR", xlab="Temperature")
+}
+dev.off()
+
+
+# COMBINED PLOTS
+
+colci <- do.call(rgb,c(as.list(col2rgb("red")),alpha=255/8,max=255))
+
+png(filename = "er_humtempppcomb_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,2))
+for (i in selcantons){
+  plot(cphumppnull[[i]],  main=paste0("Humidity (null) ",
+                listcantons[i]), ylab="RR", xlab="Partial pressure")
+  lines(cphumppcomb[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci))
+  legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
+  
+  plot(cptempnull[[i]],main=paste0("Temperature (null) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+  lines(cptempcombpp[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci) )
+  legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
+}
+dev.off()
+
+
+png(filename = "er_humtemprhcomb_5cantons.png", 
+    width = 2000, height = 2000, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+
+par(mfrow=c(5,2))
+for (i in selcantons){
+  plot(cphumrhnull[[i]],  main=paste0("Humidity (null) ",
+                listcantons[i]), ylab="RR", xlab="Rel Humidity")
+  lines(cphumrhcomb[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci))
+  legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
+  
+  plot(cptempnull[[i]],main=paste0("Temperature (null) ",
+                listcantons[i]), ylab="RR", xlab="Temperature")
+  lines(cptempcombpp[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci) )
+  legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
+}
+dev.off()
+
+
+```
+
+
+## 3. INTERACTION MODELS
+
+```{r, echo=TRUE}
+ ########################
+ # Interaction models  1 ###
+ ########################
+
+# EFFECT OF TEMPERATURE DURING HUMID/NO HUMID DAYS
+ 
+ # CREATE THE OBJECTS TO STORE THE RESULTS
+ redall.n <- redall.1 <- redall.2 <- redall.int <-list()
+ 
+ # RUN THE LOOP ACROSS CANTONS 
+ 
+ for(i in seq(length(dlist))) {
+
+  # PRINT
+  cat(i,"")
+
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+  
+  data$yday <- as.numeric(format(data$date,"%j"))
+
+  #DEFINE CROSSBASIS TEMPERATURE and define DUMMY-terms
+  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+   arglag=list(fun="ns", knots=logknots(10,2)), group=as.factor(data$year)) # could be 7days according to previous formula?
+  
+  # CREATE DUMMY VARIABLE FOR HUMIDITY
+  data$dummy1<- ifelse(data$`partial pressure [hPa]` > quantile(data$`partial pressure [hPa]`,0.9,na.rm=T),1,0) # very humid
+  data$dummy2 <- ifelse(data$`partial pressure [hPa]` <= quantile(data$`partial pressure [hPa]`,0.9,na.rm=T),1,0) # dry
+
+  # CREATE INTERACTION TERMS
+  int1 <- data$dummy1*cbt # very humid
+  int2 <- data$dummy2*cbt # dry
+
+  modnull <- glm(deaths ~ cbt + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data)
+
+  modint1 <- glm(deaths ~ cbt + int1 + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data) 
+
+  modint2 <- glm(deaths ~ cbt + int2 + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data)
+  
+  # PREDICT
+  redtemp.n <- crossreduce(cbt,modnull,cen=10, by=0.1, 
+                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+  redtemp.1 <- crossreduce(cbt,modint1,cen=10, by=0.1, 
+                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+  redtemp.2 <- crossreduce(cbt,modint2,cen=10, by=0.1, 
+                           from=round(quantile(data$`mean temperature [deg]`, 0.25, na.rm=T),1),
+                           to=round(quantile(data$`mean temperature [deg]`, 0.98, na.rm=T),1) ) 
+
+  # RESTRCIT SEARCH MMT BETWEEN 25:98 PCT
+  mmh.n <- as.numeric(names(which.min(redtemp.n$fit)))
+  mmh.1 <- as.numeric(names(which.min(redtemp.1$fit)))
+  mmh.2 <- as.numeric(names(which.min(redtemp.2$fit)))
+  
+  redall.n[[i]] <- crossreduce(cbt,modnull, cen=mmh.n, by=0.2)  
+  redall.1[[i]] <- crossreduce(cbt,modint1, cen=mmh.1, by=0.2)  # temp effect when int1==0 (dry)
+  redall.2[[i]] <- crossreduce(cbt,modint2, cen=mmh.2, by=0.2)  # temp effect when int2==0 (very humid)
+  redall.int[[i]] <- crossreduce(int1,modint1, cen=mmh.1, by=0.2)  
+ }
+ 
+ # set plot settings for ci:
+ col1 <- do.call(rgb, c(as.list(col2rgb("orange")), alpha=255/15, max=255)) # mixed effect
+ col2 <- do.call(rgb, c(as.list(col2rgb("blue")), alpha=255/10, max=255)) # humid days
+ col3 <- do.call(rgb, c(as.list(col2rgb("red")), alpha=255/10, max=255)) # dry days
+ col4 <- do.call(rgb, c(as.list(col2rgb("forestgreen")), alpha=255/10, max=255)) # interaction
+
+ 
+ png(filename = "intmodel_temp_5cantons.png", 
+    width = 2000, height = 1500, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+ 
+ par(mfrow=c(2,3))
+
+ for (k in c(1,12,21,23,25)){
+ plot(redall.n[[k]], col="orange", ci.arg=list(col=col1), 
+      main=paste0(listcantons[k], " interaction model", sep="  "), xlab="mean temperature (\u00B0C)", 
+       ylab="RR", ylim=c(0.75,2.0))
+ lines(redall.1[[k]], col="red", ci="area", ci.arg=list(col=col3))
+ lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)
+ lines(redall.int[[k]], col="forestgreen", ci="area", ci.arg=list(col=col4))
+
+ abline(v= quantile(data$`mean temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
+ # legend("top", legend=c("modelnull", "dry", "humid", "interaction"),
+ #       col=c("orange","red", "blue",  "green"), lty=1:4, cex=0.8)
+ }
+ plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1, main="Legend")
+ legend("top", legend=c("null", "mild humidity", "high humidity", "interaction"),
+        col=c("orange","red", "blue",  "forestgreen"), lty=1, cex=1.5)
+
+ 
+dev.off()
+ 
+
+# EFFECT OF HUMIDITY DURING HOT/NO HOT DAYS
+ 
+ # CREATE THE OBJECTS TO STORE THE RESULTS
+ redall.n <- redall.1 <- redall.2 <- redall.int <-list()
+ 
+ # RUN THE LOOP ACROSS CANTONS 
+ 
+ for(i in seq(length(dlist))) {
+
+  # PRINT
+  cat(i,"")
+
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+  
+  data$yday <- as.numeric(format(data$date,"%j"))
+
+  #DEFINE CROSSBASIS TEMPERATURE and define DUMMY-terms
+  cbt <- crossbasis(data$`mean temperature [deg]`, lag=10,
+   argvar=list(fun="bs",knots=quantile(data$`mean temperature [deg]`,c(50,90)/100,na.rm=T), degree=2),
+   arglag=list(fun="ns", knots=logknots(10,2)),group=as.factor(data$year)) # could be 7days according to previous formula?
+  
+  cbh <- crossbasis(data$`partial pressure [hPa]`, lag=5,
+   argvar=list(fun="lin"),
+   arglag=list(fun="strata", breaks=1),  group=as.factor(data$year))
+  
+  # CREATE DUMMY VARIABLE FOR TEMPERATURE
+  data$dummy1<- ifelse(data$`mean temperature [deg]` > quantile(data$`mean temperature [deg]`,0.9,na.rm=T),1,0) # very humid
+  data$dummy2 <- ifelse(data$`mean temperature [deg]` <= quantile(data$`mean temperature [deg]`,0.9,na.rm=T),1,0) # dry
+
+  # CREATE INTERACTION TERMS
+  int1 <- data$dummy1*cbh # very humid
+  int2 <- data$dummy2*cbh # dry
+
+  modnull <- glm(deaths ~ cbt + cbh + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data)
+
+  modint1 <- glm(deaths ~ cbt + cbh + int1 + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data) 
+
+  modint2 <- glm(deaths ~ cbt + cbh + int2 + dow + ns(yday,df=dfseas):factor(year) + ns(date,df=round(length(unique(year))/dftrend/10)), 
+  family=quasipoisson(), data)
+  
+  # PREDICT
+  redall.n[[i]] <- crossreduce(cbh,modnull, cen=quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), by=0.2)  
+  redall.1[[i]] <- crossreduce(cbh,modint1, cen=quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), by=0.2)  
+  redall.2[[i]] <- crossreduce(cbh,modint2, cen=quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), by=0.2)  
+  redall.int[[i]] <- crossreduce(int1,modint1, cen=quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), by=0.2)  
+ }
+ 
+
+ # set plot settings for ci:
+ col1 <- do.call(rgb, c(as.list(col2rgb("orange")), alpha=255/15, max=255)) # mixed effect
+ col2 <- do.call(rgb, c(as.list(col2rgb("blue")), alpha=255/10, max=255)) # hot days
+ col3 <- do.call(rgb, c(as.list(col2rgb("red")), alpha=255/10, max=255)) # no hot days
+ col4 <- do.call(rgb, c(as.list(col2rgb("forestgreen")), alpha=255/10, max=255)) # interaction
+
+ 
+png(filename = "intmodel_humpp_5cantons.png", 
+    width = 2000, height = 1500, units = "px", pointsize = 24,
+    bg = "white",  res = NA)
+  
+ par(mfrow=c(2,3))
+
+ for (k in c(1,12,21,23,25)){
+ plot(redall.n[[k]], col="orange", ci.arg=list(col=col1), 
+      main=paste0(listcantons[k], " canton interaction models", sep="  "), 
+      xlab="Partial pressure", 
+       ylab="RR", ylim=c(0.80,1.2))
+ lines(redall.1[[k]], col="red", ci="area", ci.arg=list(col=col3))
+ lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)
+ lines(redall.int[[k]], col="forestgreen", ci="area", ci.arg=list(col=col4))
+
+ abline(v= quantile(data$`mean temperature [deg]`, 0.99, na.rm=T),col = "gray60", lty = 3)
+ # legend("top", legend=c("modelnull", "dry", "humid", "interaction"),
+ #       col=c("orange","red", "blue",  "forestgreen"), lty=1:4, cex=0.8)
+ } 
+ plot(NULL ,xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1, main="Legend")
+ legend("top", legend=c("null", "mild temperature", "high temperature", "interaction"),
+        col=c("orange","red", "blue",  "forestgreen"), lty=1, cex=1.5)
+
+ dev.off()
+ 
+```
+## 4. RESULTS AT THE 99P IN TABLE
+
+```{r, echo=TRUE}
+# summarize results:
+res_TempHumidity <- matrix(NA, nrow=26, ncol=7)
+colnames(res_TempHumidity) <- c("cptempnull", "cptempcombpp", "cptempcombrh", "cphumppnull", "cphumppcomb",
+                                "cphumrhnull", "cphumrhcomb")
+#rownames(res_TempHumidity) <- c("Zurich", "Basel-Stadt", "Ticino", "Valais", "Geneva")
+rownames(res_TempHumidity) <- names(dlist)
+
+ for (k in c(1,12,21,23,25)){
+   res_TempHumidity[k,1] <- paste0(round(cptempnull[[k]]$RRfit[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempnull[[k]]$RRlow[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempnull[[k]]$RRhigh[quantile(cptempnull[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
+   
+   res_TempHumidity[k,2] <- paste0(round(cptempcombpp[[k]]$RRfit[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempcombpp[[k]]$RRlow[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempcombpp[[k]]$RRhigh[quantile(cptempcombpp[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
+   
+   res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempcombrh[[k]]$RRlow[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempcombrh[[k]]$RRhigh[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
+   
+   res_TempHumidity[k,4] <- paste0(round(mean(cphumppnull[[k]]$RRfit), digits=4), " per hPa") # linear
+   #res_TempHumidity[k,4] <- paste0(round(cphumppnull[[k]]$coefficients[1], digits=4), " per hPa") # linear
+
+   
+   res_TempHumidity[k,5] <- paste0(round(mean(cphumppcomb[[k]]$RRfit), digits=4), " per hPa") # linear 
+   
+   res_TempHumidity[k,6] <- paste0(round(mean(cphumrhnull[[k]]$RRfit), digits=4), " per % of RH") # linear 
+   
+   res_TempHumidity[k,7] <- paste0(round(mean(cphumrhcomb[[k]]$RRfit), digits=4), " per % of RH") # linear 
+   
+  # ISSUE: Check if this new approach corresponds really to the slope or not!!!! TO BE CHECKED 17.08.2021
+
+ }
+
+write.table(res_TempHumidity, file = "res_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)
+
+write.table(res_TempHumidity, file = "res_2_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)
+
+
+```

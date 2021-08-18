@@ -1,0 +1,92 @@
+---
+title: "NA Counts Swiss Cantonal Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+# SPECIFY IF WORKING FROM DESKTOP OR LAPTOP
+# dirpre <- "C:/Users/ppehavic/OD 1/LSHTM/MCC/MCCOzone/Analysis/"
+dirpre <- "D:/data/"
+
+# LOAD DATA (CLEAN MCCOZONE)
+# load(paste(dirpre,"output/swiss_cantonal_89-18.rds", sep=""))
+#dlist <- readRDS(paste(dirpre,"output/swiss_cantonal_89-18.rds", sep=""))
+dlist <- readRDS(paste(dirpre,"output/after-imp-swiss_cantonal_89-18.rds", sep=""))
+
+
+for(i in seq(length(dlist))) {
+  data <- dlist[[i]]
+  #cat(sum(is.na(data$`max temperature [deg]`)), "")
+  #cat(sum(is.na(data$`mean temperature [deg]`)), "")
+  #cat(sum(is.na(data$`min temperature [deg]`)), "")
+  #cat(sum(is.na(data$`partial pressure [hPa]`)))
+  #cat(sum(is.na(data$`relative humidity [%]`)))
+  #cat(sum(is.na(data$`saturation pressure [hPa]`)))
+  #cat(sum(is.na(data$`wet-bulb temperature [deg]`)))
+  
+
+}
+# summarize results:
+na_res_yr <- matrix(NA, nrow=26, ncol=5)
+na_res_se <- matrix(NA, nrow=26, ncol=5)
+colnames(na_res_yr) <- c("NA_Tmax", "NA_Tmean", "NA_Tmin", "NA_Pp", "NA_Rh")
+colnames(na_res_se) <- c("NAS_Tmax", "NAS_Tmean", "NAS_Tmin", "NAS_Pp", "NAS_Rh")
+
+#colnames(na_res) <- c("NA_Tmax", "NA_Pp", "NAS_Tmax", "NAS_Pp")
+
+rownames(na_res_yr) <- names(dlist)
+rownames(na_res_se) <- names(dlist)
+```
+
+## Counting the NA values
+
+# We count the NA for all cantons in the summer months and summarize in a table:
+
+```{r pressure, echo=FALSE}
+# RUN THE LOOP ACROSS CANTONS
+ for(i in seq(length(dlist))) {
+
+  # PRINT
+  cat(i,"")
+
+  # EXTRACT THE DATA
+  data <- dlist[[i]]
+  
+  # NA Count
+  na_res_yr[i,1] <- sum(is.na(data$`max temperature [deg]`)) #NA_Tmax
+  na_res_yr[i,2] <- sum(is.na(data$`mean temperature [deg]`)) #NA_Tmean
+  na_res_yr[i,3] <- sum(is.na(data$`min temperature [deg]`)) #NA_Tmin
+  na_res_yr[i,4] <- sum(is.na(data$`partial pressure [hPa]`)) #NA_Pp
+  na_res_yr[i,5] <- sum(is.na(data$`relative humidity [%]`)) #NA_Rh
+  
+  
+
+  # SUMMER PERIOD
+  data <- subset(data, month %in% 5:9)
+  
+  # Summer NA Count 
+  na_res_se[i,1] <- sum(is.na(data$`max temperature [deg]`)) #NAS_Tmax
+  na_res_se[i,2] <- sum(is.na(data$`mean temperature [deg]`)) #NAS_Tmean
+  na_res_se[i,3] <- sum(is.na(data$`min temperature [deg]`)) #NAS_Tmin
+  na_res_se[i,4] <- sum(is.na(data$`partial pressure [hPa]`)) #NAS_Pp
+  na_res_se[i,5] <- sum(is.na(data$`relative humidity [%]`)) #NAS_Rh
+  
+ }
+
+write.table(na_res_yr, file = "after-imput-na_res_yr.txt", sep = ",", quote = FALSE, row.names = T)
+write.table(na_res_se, file = "after-imput-na_res_se.txt", sep = ",", quote = FALSE, row.names = T)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+

@@ -219,7 +219,6 @@ summaryqaicRH <- apply(qaic_tabRH[c(1,12,21,23,25),,],2:3,sum)
 
 
 combPP <- which.min(summaryqaicPP[,3]) # linear & strata
-combPP <- which.min(summaryqaicPP_test[,3]) # linear & strata
 
 #combRH <- which.min(summaryqaicRH[,3]) # linear & strata
 combRH <- combPP
@@ -227,8 +226,8 @@ combRH <- combPP
 # SAVE THE WORKSPACE
 save.image("output/cbselection.RData")
 
-# LOAD STORED RESULTS
-load("output/cbselection.RData")
+# # LOAD STORED RESULTS 
+# load("output/cbselection.RData")
 
 plot(1:20,summaryqaicPP[,2], main="CB selection HUMI_NULL")
 plot(1:20,summaryqaicPP[,3], main="CB selection COMB")
@@ -246,9 +245,6 @@ which.min(summaryqaicPP[,3]) # linear & strata
 
 Plot the results for temperature and humidity for the 5 cantons selected
 ```{r}
-#update working directory
-setwd("D:/data/TempHumidity/02/img")
-
 # Save form
 cptempnull <- cphumppnull <- cphumppcomb <- 
   cptempcombpp <- cphumrhnull <- cphumrhcomb <- 
@@ -711,23 +707,19 @@ rownames(res_TempHumidity) <- names(dlist)
    
    res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " [", round(cptempcombrh[[k]]$RRlow[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2), " - ", round(cptempcombrh[[k]]$RRhigh[quantile(cptempcombrh[[k]]$predvar, 0.99, na.rm=T)],2) , "]")
    
-   res_TempHumidity[k,4] <- paste0(round(mean(cphumppnull[[k]]$RRfit), digits=4), " per hPa") # linear
-   #res_TempHumidity[k,4] <- paste0(round(cphumppnull[[k]]$coefficients[1], digits=4), " per hPa") # linear
-
+   res_TempHumidity[k,4] <- paste0(round(cphumppnull[[k]]$coefficients[[1]], digits=4), " per hPa of PP") # linear
    
-   res_TempHumidity[k,5] <- paste0(round(mean(cphumppcomb[[k]]$RRfit), digits=4), " per hPa") # linear 
+   res_TempHumidity[k,5] <- paste0(round(mean(cphumppcomb[[k]]$coefficients[[1]]), digits=4), " per hPa of PP") # linear 
    
-   res_TempHumidity[k,6] <- paste0(round(mean(cphumrhnull[[k]]$RRfit), digits=4), " per % of RH") # linear 
+   res_TempHumidity[k,6] <- paste0(round(mean(cphumrhnull[[k]]$coefficients[[1]]), digits=4), " per % of RH") # linear 
    
-   res_TempHumidity[k,7] <- paste0(round(mean(cphumrhcomb[[k]]$RRfit), digits=4), " per % of RH") # linear 
+   res_TempHumidity[k,7] <- paste0(round(mean(cphumrhcomb[[k]]$coefficients[[1]]), digits=4), " per % of RH") # linear 
    
   # ISSUE: Check if this new approach corresponds really to the slope or not!!!! TO BE CHECKED 17.08.2021
 
  }
 
-write.table(res_TempHumidity, file = "res_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)
-
-write.table(res_TempHumidity, file = "res_2_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)
+write.table(res_TempHumidity[c(1,12,21,23,25), ], file = "res_TempHumidity_99p.txt", sep = ",", quote = FALSE, row.names = T)
 
 
 ```

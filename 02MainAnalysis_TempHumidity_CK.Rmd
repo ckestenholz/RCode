@@ -227,7 +227,7 @@ combRH <- combPP
 save.image("output/cbselection.RData")
 
 # # LOAD STORED RESULTS 
-# load("output/cbselection.RData")
+# load("output/Tmax/cbselection_Tmax.RData")
 
 plot(1:20,summaryqaicPP[,2], main="CB selection HUMI_NULL")
 plot(1:20,summaryqaicPP[,3], main="CB selection COMB")
@@ -709,19 +709,32 @@ rownames(res_TempHumidity) <- names(dlist)
    # calculate the 99th percentile of the variable
    NNPC <- round(quantile(data$`max temperature [deg]`, 0.99, na.rm=T), digits=1)
    
+   FPCPP <- round(quantile(data$`partial pressure [hPa]`, 0.5, na.rm=T), digits=1)
+   FPCRH <- round(quantile(data$`relative humidity [%]`, 0.5, na.rm=T), digits=1)
+
+   
+
+   QRPP <- IQR(data$`partial pressure [hPa]`)
+   QRRH <- IQR(data$`relative humidity [%]`)
+   
    res_TempHumidity[k,1] <- paste0(round(cptempnull[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempnull[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempnull[[k]]$RRhigh[as.character(NNPC)],2) , "]")
    
    res_TempHumidity[k,2] <- paste0(round(cptempcombpp[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempcombpp[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempcombpp[[k]]$RRhigh[as.character(NNPC)],2) , "]")
    
    res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempcombrh[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempcombrh[[k]]$RRhigh[as.character(NNPC)],2) , "]")
    
-   res_TempHumidity[k,4] <- paste0(round(cphumppnull[[k]]$coefficients[[1]], digits=4), " per hPa of PP") # linear
+   res_TempHumidity[k,4] <-
+     paste(round((cphumppnull[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " [", round((cphumppnull[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " - ", round((cphumppnull[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), "] ")
+    
+   res_TempHumidity[k,5] <-
+     paste(round((cphumppcomb[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " [", round((cphumppcomb[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " - ", round((cphumppcomb[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), "] ") 
    
-   res_TempHumidity[k,5] <- paste0(round(mean(cphumppcomb[[k]]$coefficients[[1]]), digits=4), " per hPa of PP") # linear 
+   res_TempHumidity[k,6] <-
+     paste(round((cphumrhnull[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " [", round((cphumrhnull[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " - ", round((cphumrhnull[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), "] ") 
    
-   res_TempHumidity[k,6] <- paste0(round(mean(cphumrhnull[[k]]$coefficients[[1]]), digits=4), " per % of RH") # linear 
+   res_TempHumidity[k,7] <-
+     paste(round((cphumrhcomb[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " [", round((cphumrhcomb[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " - ", round((cphumrhcomb[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), "] ") 
    
-   res_TempHumidity[k,7] <- paste0(round(mean(cphumrhcomb[[k]]$coefficients[[1]]), digits=4), " per % of RH") # linear 
    
  }
 

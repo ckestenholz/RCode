@@ -175,13 +175,13 @@ for (j in 1:nrow(comb)){
   # MODEL ONLY humidity PP
   model <- glm(formula2,data,family=quasipoisson,na.action="na.exclude")
   qaic_tabPP[i,j,2] <- QAIC(model)
-  crosspredall_humnull[[i]] <- crosspred(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+  crosspredall_humnull[[i]] <- crosspred(cbh,model,cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
   
   # MODEL temp +  humidity PP
   model <- glm(formula3,data,family=quasipoisson,na.action="na.exclude")
   qaic_tabPP[i,j,3] <- QAIC(model)
-  crosspredall_humcomb[[i]] <- crosspred(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+  crosspredall_humcomb[[i]] <- crosspred(cbh,model,cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
   crosspredall_tempcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
@@ -189,13 +189,13 @@ for (j in 1:nrow(comb)){
   # MODEL ONLY humidity RH
   model <- glm(formula4,data,family=quasipoisson,na.action="na.exclude")
   qaic_tabRH[i,j,2] <- QAIC(model)
-  crosspredall_humrelnull[[i]] <- crosspred(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+  crosspredall_humrelnull[[i]] <- crosspred(cbrelh,model,cen=median(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
   
   # MODEL temp +  humidity RH
   model <- glm(formula5,data,family=quasipoisson,na.action="na.exclude")
   qaic_tabRH[i,j,3] <- QAIC(model)
-  crosspredall_humrelcomb[[i]] <- crosspred(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+  crosspredall_humrelcomb[[i]] <- crosspred(cbrelh,model,cen=median(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
   crosspredall_temprelcomb[[i]] <- crosspred(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
@@ -302,22 +302,22 @@ for(i in seq(length(dlist))) {
   
   # MODEL ONLY humidity PP
   model <- glm(formula2,data,family=quasipoisson,na.action="na.exclude")
-  cphumppnull[[i]] <- crossreduce(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+  cphumppnull[[i]] <- crossreduce(cbh,model,cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
   cphumppnulllag[[i]] <- crossreduce(cbh,model,type="var",
-                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   
   # MODEL temp +  humidity PP
   model <- glm(formula3,data,family=quasipoisson,na.action="na.exclude")
-  cphumppcomb[[i]] <- crossreduce(cbh,model,cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+  cphumppcomb[[i]] <- crossreduce(cbh,model,cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  by=0.1) 
   cptempcombpp[[i]] <- crossreduce(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   cphumppcomblag[[i]] <- crossreduce(cbh,model,type="var",
-                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   cptempcombpplag[[i]] <- crossreduce(cbt,model,type="var",
@@ -327,22 +327,22 @@ for(i in seq(length(dlist))) {
   
   # MODEL ONLY humidity RH
   model <- glm(formula4,data,family=quasipoisson,na.action="na.exclude")
-  cphumrhnull[[i]] <- crossreduce(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+  cphumrhnull[[i]] <- crossreduce(cbrelh,model,cen=median(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
   cphumrhnulllag[[i]] <- crossreduce(cbrelh,model,type="var",
-                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   
   # MODEL temp +  humidity RH
   model <- glm(formula5,data,family=quasipoisson,na.action="na.exclude")
-  cphumrhcomb[[i]] <- crossreduce(cbrelh,model,cen=mean(data$`relative humidity [%]`,na.rm=T),
+  cphumrhcomb[[i]] <- crossreduce(cbrelh,model,cen=median(data$`relative humidity [%]`,na.rm=T),
                                  by=0.1) 
   cptempcombrh[[i]] <- crossreduce(cbt,model,cen=mean(data$`max temperature [deg]`,na.rm=T),
                                  by=0.1) 
   
   cphumrhcomblag[[i]] <- crossreduce(cbrelh,model,type="var",
-                                 cen=mean(data$`partial pressure [hPa]`,na.rm=T),
+                                 cen=median(data$`partial pressure [hPa]`,na.rm=T),
                                  value=quantile(data$`partial pressure [hPa]`,0.99, na.rm=T),
                                  by=0.1) 
   cptempcombrhlag[[i]] <- crossreduce(cbt,model,type="var",
@@ -709,11 +709,11 @@ rownames(res_TempHumidity) <- names(dlist)
    # calculate the 99th percentile of the variable
    NNPC <- round(quantile(data$`max temperature [deg]`, 0.99, na.rm=T), digits=1)
    
-   FPCPP <- round(quantile(data$`partial pressure [hPa]`, 0.5, na.rm=T), digits=1)
-   FPCRH <- round(quantile(data$`relative humidity [%]`, 0.5, na.rm=T), digits=1)
+   # calculate the 60th percentiles of the humidity variables
+   SXPCPP <- round(quantile(data$`partial pressure [hPa]`, 0.6, na.rm=T), digits=1)
+   SXPCRH <- round(quantile(data$`relative humidity [%]`, 0.6, na.rm=T), digits=1)
 
-   
-
+   # the interquartile range of the humidity variables
    QRPP <- IQR(data$`partial pressure [hPa]`)
    QRRH <- IQR(data$`relative humidity [%]`)
    
@@ -723,17 +723,18 @@ rownames(res_TempHumidity) <- names(dlist)
    
    res_TempHumidity[k,3] <- paste0(round(cptempcombrh[[k]]$RRfit[as.character(NNPC)],2), " [", round(cptempcombrh[[k]]$RRlow[as.character(NNPC)],2), " - ", round(cptempcombrh[[k]]$RRhigh[as.character(NNPC)],2) , "]")
    
+   # LINEAR HUMIDITY RESULTS AT THE 60TH PERCENTILE (AT +10 PERCENTILES FROM THE MEDIAN (=50TH))
    res_TempHumidity[k,4] <-
-     paste(round((cphumppnull[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " [", round((cphumppnull[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " - ", round((cphumppnull[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppnull[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), "] ")
+     paste(round(cphumppnull[[k]]$RRfit[as.character(SXPCPP)], digits=5), " [", round(cphumppnull[[k]]$RRlow[as.character(SXPCPP)] , digits=5), " - ", round(cphumppnull[[k]]$RRhigh[as.character(SXPCPP)], digits=5), "] ")
     
    res_TempHumidity[k,5] <-
-     paste(round((cphumppcomb[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRfit[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " [", round((cphumppcomb[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRlow[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), " - ", round((cphumppcomb[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.75, na.rm=T), digits=1))] - cphumppcomb[[k]]$RRhigh[as.character(round(quantile(data$`partial pressure [hPa]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`partial pressure [hPa]`, na.rm=T), digits=5), "] ") 
+     paste(round(cphumppcomb[[k]]$RRfit[as.character(SXPCPP)], digits=5), " [", round(cphumppcomb[[k]]$RRlow[as.character(SXPCPP)], digits=5), " - ", round(cphumppcomb[[k]]$RRhigh[as.character(SXPCPP)] , digits=5), "] ") 
    
    res_TempHumidity[k,6] <-
-     paste(round((cphumrhnull[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " [", round((cphumrhnull[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " - ", round((cphumrhnull[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhnull[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), "] ") 
+     paste(round(cphumrhnull[[k]]$RRfit[as.character(SXPCRH)], digits=5), " [", round(cphumrhnull[[k]]$RRlow[as.character(SXPCRH)], digits=5), " - ", round(cphumrhnull[[k]]$RRhigh[as.character(SXPCRH)] , digits=5), "] ") 
    
    res_TempHumidity[k,7] <-
-     paste(round((cphumrhcomb[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRfit[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " [", round((cphumrhcomb[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRlow[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), " - ", round((cphumrhcomb[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.75, na.rm=T), digits=1))] - cphumrhcomb[[k]]$RRhigh[as.character(round(quantile(data$`relative humidity [%]`, 0.25, na.rm=T), digits=1))]) / IQR(data$`relative humidity [%]`, na.rm=T), digits=5), "] ") 
+     paste(round(cphumrhcomb[[k]]$RRfit[as.character(SXPCRH)] , digits=5), " [", round(cphumrhcomb[[k]]$RRlow[as.character(SXPCRH)] , digits=5), " - ", round(cphumrhcomb[[k]]$RRhigh[as.character(SXPCRH)] , digits=5), "] ") 
    
    
  }

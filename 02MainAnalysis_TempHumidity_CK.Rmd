@@ -366,13 +366,13 @@ par(mfrow=c(5,4))
 
 for (i in selcantons){
   plot(cphumppnull[[i]], main=paste0("Humidity (null) ",
-                listcantons[i]), ylab="RR", xlab="Partial pressure")
+                listcantons[i]), ylab="RR", xlab="Partial Pressure (hPa)")
   plot(cptempnull[[i]], main=paste0("Temperature (null) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
   plot(cphumppcomb[[i]], main=paste0("Humidity (comb) ",
-                listcantons[i]), ylab="RR", xlab="Partial pressure")
+                listcantons[i]), ylab="RR", xlab="Partial Pressure (hPa)")
   plot(cptempcombpp[[i]],  main=paste0("Temperature (comb) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
 }
 dev.off()
 
@@ -385,13 +385,13 @@ par(mfrow=c(5,4))
 
 for (i in selcantons){
   plot(cphumrhnull[[i]],main=paste0("Humidity (null) ",
-                listcantons[i]), ylab="RR", xlab="Rel Hum")
+                listcantons[i]), ylab="RR", xlab="Relative Humidity (%)")
   plot(cptempnull[[i]], main=paste0("Temperature (null) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
   plot(cphumrhcomb[[i]], main=paste0("Humidity (comb) ",
-                listcantons[i]), ylab="RR", xlab="Rel Hum")
+                listcantons[i]), ylab="RR", xlab="Relative Humidity (%)")
   plot(cptempcombrh[[i]], main=paste0("Temperature (comb) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
 }
 dev.off()
 
@@ -411,16 +411,16 @@ for (i in selcantons){
   
   plot(cphumppnulllag[[i]],
        main=paste0("Humidity (null) ", listcantons[i]), 
-       ylab="RR", xlab="Partial pressure")
+       ylab="RR", xlab="Partial Pressure (hPa)")
   plot(cptempnulllag[[i]], 
        main=paste0("Temperature (null) ", listcantons[i]),
-       ylab="RR", xlab="Temperature")
+       ylab="RR", xlab="Maximum Temperature (°C)")
   plot(cphumppcomblag[[i]],  
        main=paste0("Humidity (comb) ", listcantons[i]), 
-       ylab="RR", xlab="Partial pressure")
+       ylab="RR", xlab="Partial Pressure (hPa)")
   plot(cptempcombpplag[[i]],  
        main=paste0("Temperature (comb) ", listcantons[i]),
-       ylab="RR", xlab="Temperature")
+       ylab="RR", xlab="Maximum Temperature (°C)")
 }
 dev.off()
 
@@ -440,16 +440,16 @@ for (i in selcantons){
   
   plot(cphumrhnulllag[[i]],
        main=paste0("Humidity (null) ", listcantons[i]), 
-       ylab="RR", xlab="Rel humidity")
+       ylab="RR", xlab="Relative Humidity (%)")
   plot(cptempnulllag[[i]], 
        main=paste0("Temperature (null) ", listcantons[i]),
-       ylab="RR", xlab="Temperature")
+       ylab="RR", xlab="Maximum Temperature (°C)")
   plot(cphumrhcomblag[[i]],  
        main=paste0("Humidity (comb) ", listcantons[i]), 
-       ylab="RR", xlab="Rel humidity")
+       ylab="RR", xlab="Relative Humidity (%)")
   plot(cptempcombrhlag[[i]],  
        main=paste0("Temperature (comb) ", listcantons[i]),
-       ylab="RR", xlab="Temperature")
+       ylab="RR", xlab="Maximum Temperature (°C)")
 }
 dev.off()
 
@@ -465,12 +465,12 @@ png(filename = "er_humtempppcomb_5cantons.png",
 par(mfrow=c(5,2))
 for (i in selcantons){
   plot(cphumppnull[[i]],  main=paste0("Humidity (null) ",
-                listcantons[i]), ylab="RR", xlab="Partial pressure")
+                listcantons[i]), ylab="RR", xlab="Partial Pressure (hPa)")
   lines(cphumppcomb[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci))
   legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
   
   plot(cptempnull[[i]],main=paste0("Temperature (null) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
   lines(cptempcombpp[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci) )
   legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
 }
@@ -484,12 +484,12 @@ png(filename = "er_humtemprhcomb_5cantons.png",
 par(mfrow=c(5,2))
 for (i in selcantons){
   plot(cphumrhnull[[i]],  main=paste0("Humidity (null) ",
-                listcantons[i]), ylab="RR", xlab="Rel Humidity")
+                listcantons[i]), ylab="RR", xlab="Relative Humidity (%)")
   lines(cphumrhcomb[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci))
   legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
   
   plot(cptempnull[[i]],main=paste0("Temperature (null) ",
-                listcantons[i]), ylab="RR", xlab="Temperature")
+                listcantons[i]), ylab="RR", xlab="Maximum Temperature (°C)")
   lines(cptempcombpp[[i]],type="l",ci="area",  col="red", ci.arg=list(col=colci) )
   legend("top", legend=c("null", "comb"), col=c("black", "red"), lty=1, cex=0.8)
 }
@@ -585,7 +585,7 @@ dev.off()
 
  for (k in c(1,12,21,23,25)){
  plot(redall.n[[k]], col="orange", ci.arg=list(col=col1), 
-      main=paste0(listcantons[k], " interaction model", sep="  "), xlab="mean temperature (\u00B0C)", 
+      main=paste0(listcantons[k], " interaction model", sep="  "), xlab="Maximum Temperature (°C)", 
        ylab="RR", ylim=c(0.75,2.0))
  lines(redall.1[[k]], col="red", ci="area", ci.arg=list(col=col3))
  lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)
@@ -672,8 +672,8 @@ png(filename = "intmodel_humpp_5cantons.png",
 
  for (k in c(1,12,21,23,25)){
  plot(redall.n[[k]], col="orange", ci.arg=list(col=col1), 
-      main=paste0(listcantons[k], " canton interaction models", sep="  "), 
-      xlab="Partial pressure", 
+      main=paste0(listcantons[k], " interaction models", sep="  "), 
+      xlab="Partial Pressure (hPa)", 
        ylab="RR", ylim=c(0.80,1.2))
  lines(redall.1[[k]], col="red", ci="area", ci.arg=list(col=col3))
  lines(redall.2[[k]], col="blue", ci="area", ci.arg=list(col=col2),)

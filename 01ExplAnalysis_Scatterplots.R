@@ -92,6 +92,7 @@ run <- function(x){
     # PLOT histogram for exceedances for temperature and humidity for summers 2010-2018:
     scatter_plot_pp <- ggplot(dta_summer, aes(x=`partial pressure [hPa]`, y=`max temperature [deg]`)) + 
       geom_point() +
+      geom_smooth(method='lm',formula= y~x, se=FALSE) +
       ggtitle(paste0("Scatterplot for temperature and humidity: Summers 2010-2018", "\n", cant, sep=" ")) +
       xlab("mean partial pressure humidity [hPa]") +
       ylab("maximum temperature [deg]") +
@@ -102,6 +103,7 @@ run <- function(x){
     
     scatter_plot_rh <- ggplot(dta_summer, aes(x=`relative humidity [%]`, y=`max temperature [deg]`)) + 
       geom_point() +
+      geom_smooth(method='lm',formula= y~x, se=FALSE) +
       ggtitle(paste0("Scatterplot for temperature and humidity: Summers 2010-2018", "\n", cant, sep=" ")) +
       xlab("relative humidity [%]") +
       ylab("maximum temperature [deg]") +
@@ -109,6 +111,11 @@ run <- function(x){
     scatter_plot_rh
     #ggsave(paste0(getwd(), "/img/", cant, "_scatter_pp",".pdf", sep=""), device = "pdf", width=8)
     
+    ml = lm(`max temperature [deg]`~ `partial pressure [hPa]`, data=dta_summer)
+    summary(ml)$r.squared
+    
+    ml2 = lm(`max temperature [deg]`~ `relative humidity [%]`, data=dta_summer)
+    summary(ml2)$r.squared
     # SELECT SPECIFIC SUMMER TO RUN THE STUDY
     yr <- "2003"
     # yr <- "2015"
@@ -173,8 +180,30 @@ run <- function(x){
       #cor(dta$`relative humidity [%]`, dta$`max temperature [deg]`,  method = "pearson", use = "complete.obs")
       #[1] -0.5524744
       
-      ######
       
+      scatter_plot_yr_pp2 <- ggplot(dta_yr, aes(x=`max temperature [deg]`, y=`deaths`, color=as.factor(year))) + 
+        geom_point() +
+        scale_color_manual(values = c(col_reg[2], col_reg[8], col_reg[4])) +
+        ggtitle(paste0("Scatterplot for temperature and humidity: Summers 2003, 2015 and 2018 ", "\n", cant, sep=" ")) +
+        xlab("maximum temperature [deg]") +
+        ylab("deaths") +
+        labs(colour="Summer") +
+        theme_minimal() 
+      scatter_plot_yr_pp2
+      
+      
+      ######
+      # fit normal distributions
+      
+      library(fitdistrplus)
+      
+      fit <- fitdistr(dta_yr$`max temperature [deg]`, densfun= "normal")
+      fit
+      
+      hist(dta_yr$`max temperature [deg]`, pch=20, breaks=25, prob=TRUE, main="")
+      curve(dnorm(x, fit$estimate[1], fit$estimate[2]), col="red", lwd=2, add=T)
+      
+      ###############
       
       # PLOT Distribution for temperature and humidity for summers 2010-2018:
       distr_plot_yr_tmax <- ggplot(dta_yr, aes(x=`max temperature [deg]`, group=as.factor(year), fill=as.factor(year))) + 

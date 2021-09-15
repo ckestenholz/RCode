@@ -37,7 +37,7 @@ rownames(RES_RATE) <- c("Zuerich-2003", "Zuerich-2015", "Zuerich-2018", "Geneve-
 RES_PERC <- RES_RATE
 
 # SELECT SPECIFIC CANTON TO RUN THE STUDY
-# cant <- "Zuerich"
+cant <- "Zuerich"
 # cant <- "Geneve"
 # cant <- "Valais"
 # cant <- "Ticino" 
